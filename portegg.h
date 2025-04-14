@@ -17,9 +17,9 @@
 
 #include <stddef.h> /* for size_t */
 
-#define PORTEGG_BOOL    char
-#define PORTEGG_TRUE    1
-#define PORTEGG_FALSE   0
+#define PORTEGG_BOOL  char
+#define PORTEGG_TRUE  1
+#define PORTEGG_FALSE 0
 
 /* No promises that this works on all systems, can be forced if neccessary */
 static PORTEGG_BOOL porteggIsLittle(void)
