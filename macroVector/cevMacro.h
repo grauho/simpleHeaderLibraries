@@ -81,7 +81,8 @@
 #endif
 
 #define CEV_MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define CEV_MAX(x, y) (((x) > (y)) ? (x) : (y)) /* UNUSED */
+#define CEV_MAX(x, y) (((x) > (y)) ? (x) : (y)) 
+#define CEV_CLAMP(min, x, max) (CEV_MAX((min), CEV_MIN((x), (max))))
 #define CEV_ABS(x) (((x) < (0)) ? (-(x)) : (x)) /* UNUSED */
 #define CEV_IS_FATAL(err) (((err) < 0) ? CEV_TRUE : CEV_FALSE)
 #define CEV_IS_EMPTY(vec) ((((vec) != NULL) && ((vec)->len == 0)) \
@@ -115,6 +116,32 @@
  * 	  the range goes off of the end of the vector. Although the 
  * 	  index will still need to be in (0..len)
  */
+
+/* Because this does not depend on type it only needs to be defined once. If
+ * one wishes it to be available across multiple translation units a simple
+ * wrapper can be written for it */
+#ifndef CEV_ERR_TO_STR 
+#define CEV_ERR_TO_STR
+CEV_API const char* cevErrorToString(const int err_code)
+{
+	const size_t index = CEV_CLAMP(0, err_code + 2, CEV_FULLUP);
+	static const char * const lookup[] = 
+	{
+		"FATAL! General fatal error",
+		"FATAL! Memory allocation fatal error",
+		"Success",
+		"General failure",
+		"Bad function arguments",
+		"Target does not exist",
+		"Target already exists",
+		"Vector is empty",
+		"Access is out of bounds",
+		"Vector is full",
+	};
+
+	return lookup[index];
+}
+#endif /* CEV_ERR_TO_STR */
 
 #define CEV_MACRO_PROTOTYPES(NAME, type)                                     \
                                                                              \
@@ -231,7 +258,7 @@ CEV_API CEV_STAT NAME##VectorExpand(struct NAME##Vector * const vec)         \
 	}                                                                    \
 	else                                                                 \
 	{                                                                    \
-		const CEV_USIZE new_size = (vec->max != 0)                   \
+		const CEV_USIZE new_size = (vec->max > 1)                    \
 			? CEV_MIN((vec->max * 3) >> 1, CEV_UMAX)             \
 			: 2;                                                 \
 		type * const tmp = CEV_REALLOC(vec->data,                    \
