@@ -284,16 +284,24 @@ CEV_API CEV_STAT NAME##VectorTrim(struct NAME##Vector * const vec)           \
 	}                                                                    \
 	else                                                                 \
 	{                                                                    \
-		type * const tmp = CEV_REALLOC(vec->data,                    \
-			vec->len * sizeof(type));                            \
-		                                                             \
-		if (tmp == NULL)                                             \
+		if (vec->len == 0)                                           \
 		{                                                            \
-			return CEV_ERRMEM;                                   \
+			CEV_FREE(vec->data);                                 \
+			vec->data = NULL;                                    \
 		}                                                            \
-		                                                             \
-		vec->data = tmp;                                             \
-		vec->max = vec->len;                                         \
+		else                                                         \
+		{                                                            \
+			type * const tmp = CEV_REALLOC(vec->data,            \
+				vec->len * sizeof(type));                    \
+			                                                     \
+			if (tmp == NULL)                                     \
+			{                                                    \
+				return CEV_ERRMEM;                           \
+			}                                                    \
+			                                                     \
+			vec->data = tmp;                                     \
+			vec->max = vec->len;                                 \
+		}                                                            \
 	}                                                                    \
 	                                                                     \
 	return CEV_SUCCESS;                                                  \
