@@ -119,10 +119,11 @@
 
 /* Because this does not depend on type it only needs to be defined once. If
  * one wishes it to be available across multiple translation units a simple
- * wrapper can be written for it */
+ * wrapper can be written for it. Currently this is clunky and will only be
+ * visible in the first place the header is included */
 #ifndef CEV_ERR_TO_STR 
 #define CEV_ERR_TO_STR
-CEV_API const char* cevErrorToString(const int err_code)
+static const char* cevErrorToString(const int err_code)
 {
 	const size_t index = CEV_CLAMP(0, err_code + 2, CEV_FULLUP);
 	static const char * const lookup[] = 

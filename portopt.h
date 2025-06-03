@@ -81,6 +81,8 @@ static char* portoptGetArg(const size_t argc, char **argv, size_t *ind)
 		return NULL;
 	}
 
+	/* Fails if a string argument to a flag contains a leading minus sign, 
+	 * instead this now just returns the next string unconditionally */
 	/*
 	return ((argv[*ind][0] == '-') 
 	&& (portoptValidateNumber(&(argv[*ind][1])) == PORTOPT_FALSE))
