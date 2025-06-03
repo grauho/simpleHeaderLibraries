@@ -1,7 +1,4 @@
 /* License information at EOF */
-/* Very simple key/value pair configuration parsing header, no nesting is 
- * supported but the user may accomplish this through key naming, keys should
- * be enclosed in square brackets */
 #ifndef PORTCFG_H
 #define PORTCFG_H
 
@@ -34,26 +31,71 @@
 #define PORTCFG_VAL_MAX  2048
 #endif /* PORTCFG_VAL_MAX */
 
-static const char *portcfg_fmt = "[%" PORTCFG_MACRO_STR(PORTCFG_KEY_MAX) 
-	"[^]]] %*[ :=] %" PORTCFG_MACRO_STR(PORTCFG_VAL_MAX) "[^#;\n]";
+static const char *portcfg_head_fmt 
+	= "[%" PORTCFG_MACRO_STR(PORTCFG_KEY_MAX) "[^]#;]]";
+static const char *portcfg_var_fmt = "%" PORTCFG_MACRO_STR(PORTCFG_KEY_MAX) 
+	"[^:=] %*[ :=] %" PORTCFG_MACRO_STR(PORTCFG_VAL_MAX) "[^#;\n]";
 
-typedef void (PORTCFG_CB) (const char *key, const char *val, void *data);
+typedef int (PORTCFG_CB) (const char * const head, const char * const key, 
+	const char * const val, void *data);
 
 /* Definitely do not want to chomp newlines in this case */
-static const char* portcfgChomp(const char *str)
+static const char* portcfgLeftTrim(const char *str)
 {
-	while (str != NULL) 
+	if (str != NULL)
 	{
-		switch (*str)
+		while (*str != '\0') 
 		{
-			case ' ':  /* fallthrough */
-			case '\t': /* fallthrough */
-			case '\b': /* fallthrough */
-			case '\r':
-				str++;
-				break;
-			default:
-				return str;
+			switch (*str)
+			{
+				case ' ':  /* fallthrough */
+				case '\t': /* fallthrough */
+				case '\b': /* fallthrough */
+				case '\r':
+					str++;
+					break;
+				default:
+					return str;
+			}
+		}
+	}
+
+	return str;
+}
+
+static const char* portcfgRightTrim(char *str)
+{
+	char *last = NULL;
+
+	if (str != NULL)
+	{
+		while (*str != '\0')
+		{
+			switch (*str)
+			{
+				case ' ':   /* fallthrough */
+				case '\t':  /* fallthrough */
+				case '\r':  /* fallthrough */
+				case '\b':  /* fallthrough */
+				case '\n':
+					if (last == NULL)
+					{
+						last = str;
+					}
+
+					break;
+				default:
+					last = NULL;
+
+					break;
+			}
+
+			str++;
+		}
+
+		if (last != NULL)
+		{
+			*last = '\0';
 		}
 	}
 
@@ -89,9 +131,10 @@ static size_t portcfgFetchLine(char *buffer, size_t lim, FILE *fhandle)
 /* It would be nice to allow for escaped characters */
 static void portcfgProcess(FILE *fhandle, PORTCFG_CB *Callback, void *data)
 {
-	char line_buffer[PORTCFG_LINE_MAX]   = {0};
-	char key_buffer[PORTCFG_KEY_MAX + 1] = {0};
-	char val_buffer[PORTCFG_VAL_MAX + 1] = {0};
+	char line_buffer[PORTCFG_LINE_MAX]    = {0};
+	char head_buffer[PORTCFG_KEY_MAX + 1] = {0};
+	char key_buffer[PORTCFG_KEY_MAX + 1]  = {0};
+	char val_buffer[PORTCFG_VAL_MAX + 1]  = {0};
 	size_t l_end = 0;
 
 	/* Why even bother to parse if the results aren't used */
@@ -113,7 +156,7 @@ static void portcfgProcess(FILE *fhandle, PORTCFG_CB *Callback, void *data)
 	while ((l_end = portcfgFetchLine(line_buffer, PORTCFG_LINE_MAX, 
 		fhandle)) != 0)
 	{
-		const char *str = portcfgChomp(line_buffer);
+		const char *str = portcfgLeftTrim(line_buffer);
 
 		/* Fast forward FILE cursor to next line if the full line 
 		 * wasn't fetched, don't try to parse incomplete lines */
@@ -123,10 +166,21 @@ static void portcfgProcess(FILE *fhandle, PORTCFG_CB *Callback, void *data)
 
 			while (((ch = fgetc(fhandle)) != EOF) && (ch != '\n'));
 		}
-		else if (((*str != '#') && (*str != ';'))
-		&& (sscanf(str, portcfg_fmt, key_buffer, val_buffer) == 2))
+		else if (sscanf(str, portcfg_head_fmt, head_buffer) == 1)
 		{
-			Callback(key_buffer, val_buffer, data);
+			portcfgRightTrim(head_buffer);
+		}
+		else if (((*str != '#') && (*str != ';'))
+		&& (sscanf(str, portcfg_var_fmt, key_buffer, val_buffer) == 2))
+		{
+			portcfgRightTrim(key_buffer);
+			portcfgRightTrim(val_buffer);
+
+			if (Callback(head_buffer, key_buffer, val_buffer, data)
+				!= 0)
+			{
+				return;
+			}
 		}
 
 	}
