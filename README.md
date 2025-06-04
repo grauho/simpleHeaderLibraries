@@ -61,13 +61,13 @@ creation of bitfields of arbitrary length and allow for the reading and writing
 of variables of arbitrary length to said bitfields. Freestanding if an
 alternative calloc function is provided. 
 
-## macroThreadPool.h
+## macroThreadPool/macroThreadPool.h
 A library to dynamically generate a thread pool that allows for the queuing of
 a specified job. pthread.h or an applicable wrapper that provides the pthread 
 API is required. See the manual page in the dedicated directory for more 
 information.
 
-## cevMacro.h
+## macroVector/cevMacro.h
 A library to dynamically generate a dynamic array, or vector in C++ parlance, 
 of a given data type. Can be made freestanding compatible if alternatives for
 the allocation functions and memmove/memcpy are provided. See the manual
