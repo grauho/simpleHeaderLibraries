@@ -3,13 +3,22 @@
 #ifndef MACRO_THREAD_POOL_H
 #define MACRO_THREAD_POOL_H
 
-#include <stdlib.h>  /* calloc, free, could be generalized with wrappers */
 #include <stddef.h>  /* NULL, size_t */
 #include <pthread.h> /* lots, can use a windows wrapper */
 
 #define MTP_BOOL    int
 #define MTP_TRUE    1
 #define MTP_FALSE   0
+
+#ifdef MACRO_THREAD_POOL_CUSTOM_ALLOC
+#if !defined(MTP_CALLOC) || !defined(MTP_FREE)
+#error "Please define both MTP_{CALLOC,FREE} if using custom allocation"
+#endif
+#else
+#include <stdlib.h>  
+#define MTP_CALLOC calloc
+#define MTP_FREE free
+#endif
 
 #define MTP_ENQUEUE_JOB(type, queue, in)                                     \
 do                                                                           \
@@ -151,34 +160,34 @@ struct NAME##ThreadPool* NAME##NewThreadPool(const size_t num_threads,       \
 	struct NAME##ThreadPool *pool = NULL;                                \
 	size_t i;                                                            \
 	                                                                     \
-	if ((pool = calloc(1, sizeof(struct NAME##ThreadPool))) == NULL)     \
+	if ((pool = MTP_CALLOC(1, sizeof(struct NAME##ThreadPool))) == NULL) \
 	{                                                                    \
 		return NULL;                                                 \
 	}                                                                    \
 	                                                                     \
-	if ((pool->threads = calloc(num_threads, sizeof(pthread_t)))         \
+	if ((pool->threads = MTP_CALLOC(num_threads, sizeof(pthread_t)))     \
 		== NULL)                                                     \
 	{                                                                    \
-		free(pool);                                                  \
+		MTP_FREE(pool);                                              \
 		                                                             \
 		return NULL;                                                 \
 	}                                                                    \
 	                                                                     \
-	if ((pool->queue = calloc(1, sizeof(struct NAME##JobQueue)))         \
+	if ((pool->queue = MTP_CALLOC(1, sizeof(struct NAME##JobQueue)))     \
 		== NULL)                                                     \
 	{                                                                    \
-		free(pool->threads);                                         \
-		free(pool);                                                  \
+		MTP_FREE(pool->threads);                                     \
+		MTP_FREE(pool);                                              \
 		                                                             \
 		return NULL;                                                 \
 	}                                                                    \
 	                                                                     \
-	if ((pool->queue->jobs = calloc(max_jobs,                            \
+	if ((pool->queue->jobs = MTP_CALLOC(max_jobs,                        \
 		sizeof(struct NAME##ThreadArgs))) == NULL)                   \
 	{                                                                    \
-		free(pool->queue);                                           \
-		free(pool->threads);                                         \
-		free(pool);                                                  \
+		MTP_FREE(pool->queue);                                       \
+		MTP_FREE(pool->threads);                                     \
+		MTP_FREE(pool);                                              \
 		                                                             \
 		return NULL;                                                 \
 	}                                                                    \
@@ -231,20 +240,20 @@ void NAME##CleanupThreadPool(struct NAME##ThreadPool *pool)                  \
 			}                                                    \
 		}                                                            \
 								             \
-		free(pool->threads);                                         \
+		MTP_FREE(pool->threads);                                     \
 	}                                                                    \
 								             \
 	if (pool->queue != NULL)                                             \
 	{                                                                    \
 		if (pool->queue->jobs != NULL)                               \
 		{                                                            \
-			free(pool->queue->jobs);                             \
+			MTP_FREE(pool->queue->jobs);                         \
 		}                                                            \
 								             \
-		free(pool->queue);                                           \
+		MTP_FREE(pool->queue);                                       \
 	}                                                                    \
 		                                                             \
-	free(pool);                                                          \
+	MTP_FREE(pool);                                                      \
 	pool = NULL;                                                         \
 }                                                                            \
                                                                              \

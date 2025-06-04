@@ -5,12 +5,12 @@ CFLAGS		= -Wall -pedantic -O2
 LDFLAGS		= -lpthread
 PREFIX		= /usr/local
 OBJFILES	= example.o
-TARGET		= cevExample 
+TARGET		= mtpExample
 
 MANCC		= lowdown
 MANFLAGS	= -s
 MANDIR		= $(PREFIX)/share/man
-MANTARGETS	= manCev.3
+MANTARGETS	= macroThreadPool.3
 
 ifeq ($(OS),Windows_NT)
 TARGET = aout.exe

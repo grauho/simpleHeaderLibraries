@@ -112,7 +112,7 @@ static unsigned char getPortintStatus(void)
 
 	if (sizeof(p_U8) > 1)
 	{
-		ret |= PORTINT_INT_08_OVER;
+		ret |= PORTINT_INT08_OVER;
 	}
 
 	if (sizeof(p_U16) > 2)
