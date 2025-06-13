@@ -44,6 +44,7 @@ respectively.
         const size_t max_jobs);
     void {NAME}CleanupThreadPool(struct {NAME}ThreadPool *pool);
     void {NAME}WaitOnIdle(struct {NAME}ThreadPool *pool);
+    int {NAME}GetThreadId(void);
 
     Expected worker function signature:
     void FUNC(TYPE)
@@ -90,6 +91,10 @@ thread pool and all of it's associated worker threads.
 Functions as a non-destructive thread join. This function waits to return until
 all of the currently enqueued jobs have been dispatched and completed. In 
 future a version with a 'timeout' option may be introduced. 
+## {NAME}GetThreadId()
+Gets the thread local id value for the given thread this function is called 
+inside. The maximum id value is equal to INT\_MAX. Function returns -1 on 
+error.
 
 # RETURN STATUS
 Most functions return void with the exception of NewThreadPool which returns

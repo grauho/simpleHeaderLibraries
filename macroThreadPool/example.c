@@ -11,16 +11,21 @@ struct myArgs
 	char *str;
 };
 
-static void workerFunction(struct myArgs args)
-{
-	usleep(rand() % 5);
-	fprintf(stdout, "%d, %s\n", args.id, args.str);
-}
+static void workerFunction(struct myArgs args);
 
 /* this could also take a myArgs pointer instead of a value copy but since
  * nothing is being passed out of the function into the struct this is easier
  * as it requires no additional allocation */
 MACRO_THREAD_POOL_COMPLETE(foo, struct myArgs, workerFunction);
+
+static void workerFunction(struct myArgs args)
+{
+	const int thread_id = fooGetThreadId();
+
+	usleep(rand() % 5);
+	fprintf(stdout, "thread: %d, job: %d, str: %s\n", 
+		thread_id, args.id, args.str);
+}
 
 static void printHelp(void)
 {
@@ -34,7 +39,7 @@ static void printHelp(void)
 
 int main(int argc, char **argv)
 {
-	struct fooThreadPool *pool = fooNewThreadPool(7, 7);	
+	struct fooThreadPool *pool = fooNewThreadPool(5, 10);	
 	unsigned int seed = 0;
 	size_t i;
 

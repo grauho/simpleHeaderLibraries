@@ -4,6 +4,7 @@
 #define MACRO_THREAD_POOL_H
 
 #include <stddef.h>  /* NULL, size_t */
+#include <limits.h>  /* INT_MAX */
 #include <pthread.h> /* lots, can use a windows wrapper */
 
 #define MTP_BOOL    int
@@ -110,6 +111,39 @@ enum {MTP_PROTOTYPE_DUMMY = 0}
 
 #define MACRO_THREAD_POOL_DEFINITIONS(NAME, ElmType, ThreadFunc)             \
                                                                              \
+static pthread_once_t NAME##_id_once = PTHREAD_ONCE_INIT;                    \
+static pthread_key_t NAME##_id_key;                                          \
+                                                                             \
+static void NAME##IdDestroy(void *key)                                       \
+{                                                                            \
+	MTP_FREE(key);                                                       \
+}                                                                            \
+                                                                             \
+static void NAME##IdKeyCreate(void)                                          \
+{                                                                            \
+	pthread_key_create(&(NAME##_id_key), NAME##IdDestroy);               \
+}                                                                            \
+                                                                             \
+static void NAME##IdCreate(void)                                             \
+{                                                                            \
+	static pthread_mutex_t inc_mutex = PTHREAD_MUTEX_INITIALIZER;        \
+	static volatile unsigned int runner = 0;                             \
+	signed int *thread_id = MTP_CALLOC(1, sizeof(signed int));           \
+	                                                                     \
+	pthread_mutex_lock(&(inc_mutex));                                    \
+	*thread_id = (runner <= INT_MAX) ? (signed int) runner++ : -1;       \
+	pthread_mutex_unlock(&(inc_mutex));                                  \
+	pthread_once(&(NAME##_id_once), NAME##IdKeyCreate);                  \
+	pthread_setspecific(NAME##_id_key, thread_id);                       \
+}                                                                            \
+                                                                             \
+int NAME##GetThreadId(void)                                                  \
+{                                                                            \
+	int * const ret = pthread_getspecific(NAME##_id_key);                \
+	                                                                     \
+	return (ret != NULL) ? (*ret) : (-1);                                \
+}                                                                            \
+                                                                             \
 void NAME##EnqueueJob(struct NAME##ThreadPool *pool, ElmType in)             \
 {                                                                            \
 	struct NAME##ThreadArgs tmp;                                         \
@@ -123,6 +157,8 @@ void NAME##EnqueueJob(struct NAME##ThreadPool *pool, ElmType in)             \
 void* NAME##ThreadRoutine(void *queue)                                       \
 {                                                                            \
 	struct NAME##ThreadArgs args = {0};                                  \
+	                                                                     \
+	NAME##IdCreate();                                                    \
 	                                                                     \
 	for (;;)                                                             \
 	{                                                                    \
